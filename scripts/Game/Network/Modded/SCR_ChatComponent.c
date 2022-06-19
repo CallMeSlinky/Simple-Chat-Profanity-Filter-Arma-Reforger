@@ -13,11 +13,20 @@ modded class SCR_ChatComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void RpcAsk_MessageContainsProfanity(string message, int channel, int senderId)
 	{	
-		if (ContainsProfanity(message) && !GetGame().GetPlayerManager().HasPlayerRole(senderId, EPlayerRole.ADMINISTRATOR))
+		// Server code
+		
+		/* Checks if message contains bad words */
+		
+		if (ContainsProfanity(message, senderId))
 		{	
+			/* Initiates the user warning count to the map if they do not exist already */ 
 			AddUser(senderId);
+			
+			/* Updates the user warning count by 1 */
 			SetUsersWarningCount(senderId, GetUsersWarningCount(senderId) + 1);
 			
+			/* If the player has reached the max warning threshold they will be kicked.
+			Going to add options to ban later */
 			if (GetUsersWarningCount(senderId) == GetMaxWarningCount())
 			{
 			 	GetGame().GetPlayerManager().KickPlayer(senderId, SCR_PlayerManagerKickReason.KICKED_BY_GM);
@@ -25,9 +34,11 @@ modded class SCR_ChatComponent
 				return;
 			}
 			
+			/* Notifies the player that they have been warned */
 			Rpc(NotifyPlayer, GetUsersWarningCount(senderId), GetMaxWarningCount());
 			return;
 		}
+		/* If the message doesn't contain any profanity then execute the message as normal */
 		Rpc(ExecuteMessage, message, channel, senderId);
 	}
  
@@ -59,12 +70,19 @@ modded class SCR_ChatComponent
 		playerWarnings.Set(senderId, warningCount);
 	}
 	
-	protected bool ContainsProfanity(string message)
+	protected bool ContainsProfanity(string message, int senderId)
 	{
+		
+		/* Skips if user is an admin */
+		if (GetGame().GetPlayerManager().HasPlayerRole(senderId, EPlayerRole.ADMINISTRATOR))
+			return false;
+		
+		/* Loads the text file with naughty words and
+		checks if the message contains any of these words
+		should add detection logic later!*/
 		array<string> words = new array<string>();
 		message.ToLower();
 		message.Split(" ", words, true);
-		
 		
 		FileHandle file = FileIO.OpenFile("bad-words.txt", FileMode.READ);
 		
@@ -91,6 +109,7 @@ modded class SCR_ChatComponent
 		SCR_HintManagerComponent hintsManager = SCR_HintManagerComponent.GetInstance();
 		hintsManager.ShowCustom(message, "Chat");
 	}
+	
 	
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]	
 	protected void ExecuteMessage(string msg, int channel, int senderId)
