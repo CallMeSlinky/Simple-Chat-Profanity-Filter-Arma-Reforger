@@ -1,0 +1,8 @@
+GameProject {
+ ID "SimpleProfanityFilter"
+ GUID "59A4750B36C0CA2B"
+ TITLE "Simple Profanity Filter"
+ Dependencies {
+  "58D0FB3206B6F859"
+ }
+}
